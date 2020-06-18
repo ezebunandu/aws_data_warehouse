@@ -1,2 +1,8 @@
+# Ignore virtual environment folder
 *_env
+
+# Ignore configuration files
 *.cfg
+
+# Ignore Ipython notebook checkpoints
+*checkpoint* 
