@@ -35,19 +35,19 @@ Also, you'll need to create a virtual environment and install the requirements u
 
 1. Provision AWS Redshift cluster
 ```
-  python infrastructure/provision_cluster.py`
+  python infrastructure/provision_cluster.py
 ```
 2. Create the schemas for the staging and normalized tables
 
 **Note: First verify that the AWS Redshift cluster has been fully provisioned and available for use before running this step**
 ```
-   python create_tables.py`
+   python create_tables.py
 ```
 3. Execute the ETL pipeline
 ```
-   python etl.py`
+   python etl.py
 ```
 4. Delete the Redshift cluster when no longer required
 ```
-   python infrastructure/delete_cluster.py`
+   python infrastructure/delete_cluster.py
 ```
