@@ -14,23 +14,23 @@ LOG_JSONPATH = config.get("S3", "LOG_JSONPATH")
 
 staging_events_table_drop = "DROP TABLE IF EXISTS staging_events"
 staging_songs_table_drop = "DROP TABLE IF EXISTS staging_songs"
-songplay_table_drop = "DROP TABLE IF EXISTS fact_songplays"
-user_table_drop = "DROP TABLE IF EXISTS dim_users"
-song_table_drop = "DROP TABLE IF EXISTS dim_songs"
-artist_table_drop = "DROP TABLE IF EXSITS dim_artists"
-time_table_drop = "DROP TABLE IF EXISTS dim_time"
+songplay_table_drop = "DROP TABLE IF EXISTS songplays"
+user_table_drop = "DROP TABLE IF EXISTS users"
+song_table_drop = "DROP TABLE IF EXISTS songs"
+artist_table_drop = "DROP TABLE IF EXISTS artists"
+time_table_drop = "DROP TABLE IF EXISTS time"
 
 # CREATE TABLES
 staging_events_table_create = """
 CREATE TABLE IF NOT EXISTS staging_events(
 artist          VARCHAR,
 auth            VARCHAR,
-firstName       varchar(64),
-gender          char(1),
+firstName       VARCHAR,
+gender          vARCHAR,
 itemInSession   INTEGER,
-lastName        VARCHAR(64),
+lastName        VARCHAR,
 length          FLOAT,
-level           VARCHAR(32),
+level           VARCHAR,
 location        VARCHAR,
 method          VARCHAR,
 page            VARCHAR,
@@ -47,48 +47,48 @@ userId          INTEGER
 staging_songs_table_create = """
 CREATE TABLE IF NOT EXISTS staging_songs
 (
-song_id             VARCHAR(64),
+song_id             VARCHAR,
 num_songs           INTEGER,
-title               VARCHAR(256),
-artist_name         VARCHAR(256),
-artist_latitude     DOUBLE PRECISION,
+title               VARCHAR,
+artist_name         VARCHAR,
+artist_latitude     FlOAT,
 year                INTEGER,
 duration            FLOAT,
-artist_id           VARCHAR(64),
-artist_longitude    DOUBLE PRECISION,
-artist_location     VARCHAR(256)
+artist_id           VARCHAR,
+artist_longitude    FLOAT,
+artist_location     VARCHAR
 );
 """
 
 songplay_table_create = """
 CREATE TABLE IF NOT EXISTS songplays (
+songplay_id INTEGER IDENTITY(0, 1) PRIMARY KEY sortkey,
 start_time  TIMESTAMP,
 user_id     INTEGER,
-level       VARCHAR(32),
-song_id     VARCHAR(64),
-artist_id   VARCHAR(64),
+level       VARCHAR,
+song_id     VARCHAR,
+artist_id   VARCHAR,
 session_id  INTEGER,
 location    VARCHAR,
-user_agent  VARCHAR,
-PRIMARY KEY (start_time, user_id)
+user_agent  VARCHAR
 );
 """
 
 user_table_create = """
 CREATE TABLE IF NOT EXISTS users (
-user_Id     INTEGER PRiMARY KEY distkey,
-first_name  VARCHAR(64),
-last_name   VARCHAR(64),
-gender      CHAR(1),
-level       VARCHAR(32)
-)
+user_Id     INTEGER PRIMARY KEY distkey,
+first_name  VARCHAR,
+last_name   VARCHAR,
+gender      VARCHAR,
+level       VARCHAR
+);
 """
 
 song_table_create = """
 CREATE TABLE IF NOT EXISTS songs(
 song_id     VARCHAR PRIMARY KEY,
-title       VARCHAR(256),
-artist_id   VARCHAR(64) distkey,
+title       VARCHAR,
+artist_id   VARCHAR distkey,
 year        INTEGER,
 duration    FLOAT
 );
@@ -96,11 +96,11 @@ duration    FLOAT
 
 artist_table_create = """
 CREATE TABLE IF NOT EXISTS artists(
-artist_id   VARHCAR(64) PRIMARY KEY distkey,
-name        VARCHAR(256),
+artist_id   VARCHAR PRIMARY KEY distkey,
+name        VARCHAR,
 location    VARCHAR,
-latitude    DOUBLE PRECISION
-longitude   DOUBLE PRECISION
+latitude    FLOAT,
+longitude   FlOAT
 );
 """
 
@@ -121,13 +121,14 @@ staging_events_copy = f"""COPY staging_events from {LOG_DATA}
     CREDENTIALS 'aws_iam_role={IAM_ARN}'
     COMPUPDATE OFF REGION 'us-west-2'
     TIMEFORMAT AS 'epochmillisecs'
-    FORMAT AS json {LOG_JSONPATH};
+    FORMAT AS JSON {LOG_JSONPATH};
 """
 
 staging_songs_copy = f"""COPY staging_songs FROM {SONG_DATA}
     CREDENTIALS 'aws_iam_role={IAM_ARN}'
     COMPUPDATE OFF REGION 'us-west-2'
-    FORMAT AS JSON 'auto';
+    FORMAT AS JSON 'auto'
+    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL;
 """
 
 # FINAL TABLES
@@ -141,16 +142,16 @@ songplay_table_insert = """INSERT INTO songplays(
     location,
     user_agent
 )
-SELECT DISTINCT se.ts,
+SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'), 'YYYY-MM-DD HH24:MI:SS'),
                 se.userId,
                 se.level,
                 ss.song_id,
                 ss.artist_id,
-                se.session_id,
-                ss.artist_location,
+                se.sessionId,
+                se.location,
                 se.userAgent
     FROM staging_events se
-    LEFT JOIN staging_songs ss ON se.artist = ss.artist_name AND se.song = ss.title;
+    JOIN staging_songs ss ON se.artist = ss.artist_name AND se.song = ss.title;
 """
 
 user_table_insert = """INSERT INTO users (
@@ -166,7 +167,7 @@ SELECT DISTINCT userId,
                 gender,
                 level
     FROM staging_events
-    WHERE userID IS NOT NULL;
+    WHERE userId IS NOT NULL;
 """
 
 song_table_insert = """INSERT INTO songs (
@@ -188,7 +189,7 @@ SELECT DISTINCT song_id,
 artist_table_insert = """INSERT INTO artists (
     artist_id,
     name,
-    location
+    location,
     latitude,
     longitude
 )
