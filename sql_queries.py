@@ -61,7 +61,7 @@ artist_location     VARCHAR(256)
 """
 
 songplay_table_create = """
-CREATE TABLE IF NOT EXISTS fact_songplays (
+CREATE TABLE IF NOT EXISTS songplays (
 start_time  TIMESTAMP,
 user_id     INTEGER,
 level       VARCHAR(32),
@@ -75,7 +75,7 @@ PRIMARY KEY (start_time, user_id)
 """
 
 user_table_create = """
-CREATE TABLE IF NOT EXISTS dim_users (
+CREATE TABLE IF NOT EXISTS users (
 user_Id     INTEGER PRiMARY KEY distkey,
 first_name  VARCHAR(64),
 last_name   VARCHAR(64),
@@ -85,7 +85,7 @@ level       VARCHAR(32)
 """
 
 song_table_create = """
-CREATE TABLE IF NOT EXISTS dim_songs(
+CREATE TABLE IF NOT EXISTS songs(
 song_id     VARCHAR PRIMARY KEY,
 title       VARCHAR(256),
 artist_id   VARCHAR(64) distkey,
@@ -95,7 +95,7 @@ duration    FLOAT
 """
 
 artist_table_create = """
-CREATE TABLE IF NOT EXISTS dim_artist(
+CREATE TABLE IF NOT EXISTS artists(
 artist_id   VARHCAR(64) PRIMARY KEY distkey,
 name        VARCHAR(256),
 location    VARCHAR,
@@ -105,7 +105,7 @@ longitude   DOUBLE PRECISION
 """
 
 time_table_create = """
-CREATE TABLE IF NOT EXISTS dim_time(
+CREATE TABLE IF NOT EXISTS time(
 start_time  TIMESTAMP PRIMARY KEY sortkey distkey,
 hour        INTEGER,
 day         INTEGER,
@@ -131,24 +131,97 @@ staging_songs_copy = f"""COPY staging_songs FROM {SONG_DATA}
 """
 
 # FINAL TABLES
-
-songplay_table_insert = """
+songplay_table_insert = """INSERT INTO songplays(
+    start_time,
+    user_id,
+    level,
+    song_id,
+    artist_id,
+    session_id,
+    location,
+    user_agent
+)
+SELECT DISTINCT se.ts,
+                se.userId,
+                se.level,
+                ss.song_id,
+                ss.artist_id,
+                se.session_id,
+                ss.artist_location,
+                se.userAgent
+    FROM staging_events se
+    LEFT JOIN staging_songs ss ON se.artist = ss.artist_name AND se.song = ss.title;
 """
 
-user_table_insert = """
+user_table_insert = """INSERT INTO users (
+    user_id,
+    first_name,
+    last_name,
+    gender,
+    level
+)
+SELECT DISTINCT userId,
+                firstName,
+                lastName,
+                gender,
+                level
+    FROM staging_events
+    WHERE userID IS NOT NULL;
 """
 
-song_table_insert = """
+song_table_insert = """INSERT INTO songs (
+    song_id,
+    title,
+    artist_id,
+    year,
+    duration
+)
+SELECT DISTINCT song_id,
+                title,
+                artist_id,
+                year,
+                duration
+    FROM staging_songs
+    WHERE song_id IS NOT NULL;
 """
 
-artist_table_insert = """
+artist_table_insert = """INSERT INTO artists (
+    artist_id,
+    name,
+    location
+    latitude,
+    longitude
+)
+SELECT DISTINCT artist_id,
+                artist_name,
+                artist_location,
+                artist_latitude,
+                artist_longitude
+    FROM staging_songs
+    WHERE artist_id IS NOT NULL;
 """
 
-time_table_insert = """
+time_table_insert = """INSERT INTO time(
+    start_time,
+    hour,
+    day,
+    week,
+    month,
+    year,
+    weekday
+)
+SELECT DISTINCT ts,
+                EXTRACT(hour from ts),
+                EXTRACT(day from ts),
+                EXTRACT(week from ts),
+                EXTRACT(month from ts),
+                EXTRACT(year from ts),
+                EXTRACT(weekday from ts)
+    FROM staging_events
+    WHERE ts IS NOT NULL;
 """
 
 # QUERY LISTS
-
 create_table_queries = [
     staging_events_table_create,
     staging_songs_table_create,
