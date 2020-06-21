@@ -8,7 +8,7 @@ config.read_file(open("dwh.cfg"))
 KEY = config.get("AWS", "KEY")
 SECRET = config.get("AWS", "SECRET")
 
-CLUSTER_IDENTIFIER = config.get("CLUSTER", "IDENTIFIER")
+CLUSTER_IDENTIFIER = config.get("SETUP", "IDENTIFIER")
 DBNAME = config.get("CLUSTER", "DB_NAME")
 DB_USER = config.get("CLUSTER", "DB_USER")
 DB_PASSWORD = config.get("CLUSTER", "DB_PASSWORD")

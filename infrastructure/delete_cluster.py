@@ -7,7 +7,7 @@ config.read_file(open("dwh.cfg"))
 KEY = config.get("AWS", "KEY")
 SECRET = config.get("AWS", "SECRET")
 
-CLUSTER_IDENTIFIER = config.get("CLUSTER", "IDENTIFIER")
+CLUSTER_IDENTIFIER = config.get("SETUP", "IDENTIFIER")
 IAM_ROLE_NAME = config.get("IAM_ROLE", "ROLE_NAME")
 
 iam = boto3.client(
