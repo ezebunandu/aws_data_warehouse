@@ -62,12 +62,12 @@ artist_location     VARCHAR
 
 songplay_table_create = """
 CREATE TABLE IF NOT EXISTS songplays (
-songplay_id INTEGER IDENTITY(0, 1) PRIMARY KEY sortkey,
+songplay_id INTEGER IDENTITY(0, 1) PRIMARY KEY,
 start_time  TIMESTAMP,
-user_id     INTEGER,
+user_id     INTEGER NOT NULL,
 level       VARCHAR,
-song_id     VARCHAR,
-artist_id   VARCHAR,
+song_id     VARCHAR NOT NULL,
+artist_id   VARCHAR NOT NULL,
 session_id  INTEGER,
 location    VARCHAR,
 user_agent  VARCHAR
@@ -76,7 +76,7 @@ user_agent  VARCHAR
 
 user_table_create = """
 CREATE TABLE IF NOT EXISTS users (
-user_Id     INTEGER PRIMARY KEY distkey,
+user_id     INTEGER PRIMARY KEY,
 first_name  VARCHAR,
 last_name   VARCHAR,
 gender      VARCHAR,
@@ -88,7 +88,7 @@ song_table_create = """
 CREATE TABLE IF NOT EXISTS songs(
 song_id     VARCHAR PRIMARY KEY,
 title       VARCHAR,
-artist_id   VARCHAR distkey,
+artist_id   VARCHAR,
 year        INTEGER,
 duration    FLOAT
 );
@@ -96,7 +96,7 @@ duration    FLOAT
 
 artist_table_create = """
 CREATE TABLE IF NOT EXISTS artists(
-artist_id   VARCHAR PRIMARY KEY distkey,
+artist_id   VARCHAR PRIMARY KEY,
 name        VARCHAR,
 location    VARCHAR,
 latitude    FLOAT,
@@ -106,7 +106,7 @@ longitude   FlOAT
 
 time_table_create = """
 CREATE TABLE IF NOT EXISTS time(
-start_time  TIMESTAMP PRIMARY KEY sortkey distkey,
+start_time  TIMESTAMP PRIMARY KEY,
 hour        INTEGER,
 day         INTEGER,
 week        INTEGER,
