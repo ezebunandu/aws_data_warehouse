@@ -29,16 +29,16 @@ firstName       VARCHAR,
 gender          vARCHAR,
 itemInSession   INTEGER,
 lastName        VARCHAR,
-length          FLOAT,
+length          NUMERIC,
 level           VARCHAR,
 location        VARCHAR,
 method          VARCHAR,
 page            VARCHAR,
-registration    BIGINT,
+registration    NUMERIC,
 sessionId       INTEGER,
 song            VARCHAR,
 status          INTEGER,
-ts              TIMESTAMP,
+ts              BIGINT,
 userAgent       VARCHAR,
 userId          INTEGER
 );
@@ -49,14 +49,14 @@ CREATE TABLE IF NOT EXISTS staging_songs
 (
 song_id             VARCHAR,
 num_songs           INTEGER,
-title               VARCHAR,
-artist_name         VARCHAR,
-artist_latitude     FlOAT,
+title               VARCHAR(MAX),
+artist_name         VARCHAR(MAX),
+artist_latitude     VARCHAR(MAX),
 year                INTEGER,
-duration            FLOAT,
+duration            NUMERIC,
 artist_id           VARCHAR,
-artist_longitude    FLOAT,
-artist_location     VARCHAR
+artist_longitude    VARCHAR(MAX),
+artist_location     VARCHAR(MAX)
 );
 """
 
@@ -64,12 +64,12 @@ songplay_table_create = """
 CREATE TABLE IF NOT EXISTS songplays (
 songplay_id INTEGER IDENTITY(0, 1) PRIMARY KEY,
 start_time  TIMESTAMP,
-user_id     INTEGER NOT NULL,
+user_id     INTEGER,
 level       VARCHAR,
-song_id     VARCHAR NOT NULL,
-artist_id   VARCHAR NOT NULL,
+song_id     VARCHAR,
+artist_id   VARCHAR,
 session_id  INTEGER,
-location    VARCHAR,
+location    TEXT,
 user_agent  VARCHAR
 );
 """
@@ -87,20 +87,20 @@ level       VARCHAR
 song_table_create = """
 CREATE TABLE IF NOT EXISTS songs(
 song_id     VARCHAR PRIMARY KEY,
-title       VARCHAR,
+title       VARCHAR(MAX),
 artist_id   VARCHAR,
 year        INTEGER,
-duration    FLOAT
+duration    NUMERIC
 );
 """
 
 artist_table_create = """
 CREATE TABLE IF NOT EXISTS artists(
 artist_id   VARCHAR PRIMARY KEY,
-name        VARCHAR,
-location    VARCHAR,
-latitude    FLOAT,
-longitude   FlOAT
+name        VARCHAR(MAX),
+location    VARCHAR(MAX),
+latitude    VARCHAR(MAX),
+longitude   VARCHAR(MAX)
 );
 """
 
@@ -110,9 +110,9 @@ start_time  TIMESTAMP PRIMARY KEY,
 hour        INTEGER,
 day         INTEGER,
 week        INTEGER,
-month       INTEGER,
+month       VARCHAR,
 year        INTEGER,
-weekday     INTEGER
+weekday     VARCHAR
 );
 """
 
@@ -127,8 +127,7 @@ staging_events_copy = f"""COPY staging_events from {LOG_DATA}
 staging_songs_copy = f"""COPY staging_songs FROM {SONG_DATA}
     CREDENTIALS 'aws_iam_role={IAM_ARN}'
     COMPUPDATE OFF REGION 'us-west-2'
-    FORMAT AS JSON 'auto'
-    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL;
+    FORMAT AS JSON 'auto';
 """
 
 # FINAL TABLES
@@ -142,7 +141,7 @@ songplay_table_insert = """INSERT INTO songplays(
     location,
     user_agent
 )
-SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'), 'YYYY-MM-DD HH24:MI:SS'),
+SELECT DISTINCT TIMESTAMP 'epoch' + (se.ts / 1000) * INTERVAL '1 second',
                 se.userId,
                 se.level,
                 ss.song_id,
@@ -150,8 +149,9 @@ SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'), 'YYYY-MM-DD 
                 se.sessionId,
                 se.location,
                 se.userAgent
-    FROM staging_events se
-    JOIN staging_songs ss ON se.artist = ss.artist_name AND se.song = ss.title;
+    FROM staging_events se INNER JOIN staging_songs ss
+    ON se.artist = ss.artist_name AND se.song = ss.title
+    AND se.page = 'NextSong';
 """
 
 user_table_insert = """INSERT INTO users (
@@ -167,7 +167,8 @@ SELECT DISTINCT userId,
                 gender,
                 level
     FROM staging_events
-    WHERE userId IS NOT NULL;
+    WHERE userId IS NOT NULL
+    AND page = 'NextSong';
 """
 
 song_table_insert = """INSERT INTO songs (
@@ -198,8 +199,7 @@ SELECT DISTINCT artist_id,
                 artist_location,
                 artist_latitude,
                 artist_longitude
-    FROM staging_songs
-    WHERE artist_id IS NOT NULL;
+    FROM staging_songs;
 """
 
 time_table_insert = """INSERT INTO time(
@@ -211,15 +211,14 @@ time_table_insert = """INSERT INTO time(
     year,
     weekday
 )
-SELECT DISTINCT ts,
-                EXTRACT(hour from ts),
-                EXTRACT(day from ts),
-                EXTRACT(week from ts),
-                EXTRACT(month from ts),
-                EXTRACT(year from ts),
-                EXTRACT(weekday from ts)
-    FROM staging_events
-    WHERE ts IS NOT NULL;
+SELECT DISTINCT TIMESTAMP 'epoch' + (ts/1000) * INTERVAL '1 second' AS start_time,
+                EXTRACT(HOUR FROM start_time),
+                EXTRACT(DAY FROM start_time),
+                EXTRACT(WEEKS FROM start_time),
+                EXTRACT(MONTH FROM start_time),
+                EXTRACT(YEAR FROM start_time),
+                to_char(start_time, 'DAY')
+    FROM staging_events;
 """
 
 # QUERY LISTS
