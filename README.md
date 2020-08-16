@@ -1,4 +1,4 @@
-# Sparkfy AWS Data Warehouse Project
+# Sparkify AWS Data Warehouse Project
 
 ## Motivation
 
